@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Chi Tiêu Nhóm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- ONBOARDING SCREEN -->
+        <section id="onboarding-screen" class="glass" style="display: none; padding: 3rem; text-align: center; max-width: 600px; margin: 4rem auto;">
+            <h2 style="font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 1rem;">Quản Lý Chi Tiêu Nhóm ✨</h2>
+            
+            <div id="onboarding-tabs" style="display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: center;">
+                <button id="tab-create" style="padding: 0.8rem 1.5rem; border-radius: 20px; border: none; background: var(--primary); color: white; font-weight: 800; cursor: pointer;">Tạo Nhóm Mới</button>
+                <button id="tab-join" style="padding: 0.8rem 1.5rem; border-radius: 20px; border: none; background: #e2e8f0; color: var(--text-primary); font-weight: 800; cursor: pointer;">Tham Gia Nhóm</button>
+            </div>
+
+            <!-- TAB TẠO NHÓM -->
+            <div id="create-group-section">
+                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-weight: 600;">Nhập thông tin nhóm để bắt đầu quản lý chi tiêu</p>
+                
+                <div class="form-control" style="text-align: left;">
+                    <label>Tên nhóm của bạn</label>
+                    <input type="text" id="group-name-input" placeholder="VD: Hội ế vợ, Chuyến đi Đà Lạt..." required>
+                </div>
+
+                <div class="form-control" style="text-align: left; margin-top: 1.5rem;">
+                    <label>Thành viên trong nhóm</label>
+                    <div id="members-input-list">
+                        <input type="text" class="member-name-input" placeholder="Tên thành viên 1" required style="margin-bottom: 0.5rem;">
+                        <input type="text" class="member-name-input" placeholder="Tên thành viên 2" required style="margin-bottom: 0.5rem;">
+                    </div>
+                    <button type="button" id="add-member-input-btn" style="background: none; border: 2px dashed var(--primary); color: var(--primary); width: 100%; padding: 0.8rem; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 0.5rem; transition: all 0.2s;">+ Thêm thành viên</button>
+                </div>
+
+                <button id="create-group-btn" class="btn" style="margin-top: 2rem; font-size: 1.2rem;">🚀 Tạo Nhóm Mới</button>
+            </div>
+
+            <!-- TAB THAM GIA NHÓM -->
+            <div id="join-group-section" style="display: none;">
+                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-weight: 600;">Nhập Mã Nhóm do bạn bè chia sẻ để tham gia</p>
+                
+                <div class="form-control" style="text-align: left;">
+                    <label>Mã Nhóm (Room ID)</label>
+                    <input type="text" id="join-code-input" placeholder="Nhập mã gồm 6 chữ cái/số..." style="text-transform: uppercase; text-align: center; font-size: 1.5rem; letter-spacing: 5px; font-weight: 800;" required>
+                </div>
+
+                <button id="join-group-btn" class="btn" style="margin-top: 2rem; font-size: 1.2rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">🤝 Tham Gia</button>
+            </div>
+        </section>
+
+        <!-- MAIN DASHBOARD -->
+        <main id="main-dashboard" style="display: none;">
+            <header>
+                <h1><i class="fa-solid fa-users"></i> <span id="header-group-name">Quản Lý Chi Tiêu Nhóm</span></h1>
+                <p id="header-group-members">Kiểm soát chi tiêu cho nhóm</p>
+                <div style="margin-top: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    <span style="font-weight: 800; color: var(--text-primary);">Mã Nhóm:</span>
+                    <span id="display-group-code" style="background: var(--primary); color: white; padding: 0.4rem 1rem; border-radius: 12px; font-weight: 800; letter-spacing: 2px;">XYZ123</span>
+                    <button id="copy-code-btn" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 1.2rem;" title="Copy mã"><i class="fa-regular fa-copy"></i></button>
+                    <button id="logout-btn" style="background: #fee2e2; color: #ef4444; border: none; padding: 0.4rem 1rem; border-radius: 12px; font-weight: 800; cursor: pointer; margin-left: 1rem;"><i class="fa-solid fa-right-from-bracket"></i> Thoát nhóm</button>
+                </div>
+            </header>
+            <section class="dashboard">
+                <div class="card balance-card glass">
+                    <h2>Tổng Chi Tiêu Nhóm</h2>
+                    <h3 id="total-group-expense">0 ₫</h3>
+                </div>
+                
+                <div class="members-summary" id="members-summary-container">
+                    <!-- Member cards will be generated here by JS -->
+                </div>
+
+                <div class="settlement-section glass mt-4">
+                    <h3><i class="fa-solid fa-handshake"></i> Phương Án Tất Toán</h3>
+                    <div class="average-box">
+                        <span>Bình quân mỗi người phải chi:</span>
+                        <strong id="average-expense">0 ₫</strong>
+                    </div>
+                    <ul id="settlement-list" class="settlement-list">
+                        <!-- Settlements will go here -->
+                    </ul>
+                </div>
+            </section>
+
+            <div class="grid-layout">
+                <section class="add-transaction glass">
+                    <h3><i class="fa-solid fa-plus-circle"></i> Thêm Khoản Chi</h3>
+                    <form id="form">
+                        <div class="form-row">
+                            <div class="form-control">
+                                <label for="date">Ngày</label>
+                                <input type="date" id="date" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="payer">Người chi</label>
+                                <select id="payer" required>
+                                    <option value="" disabled selected>-- Chọn người chi --</option>
+                                    <!-- Options generated by JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label for="desc">Nội dung chi tiêu</label>
+                            <input type="text" id="desc" placeholder="VD: Mua đồ ăn, Nước uống..." required>
+                        </div>
+
+                        <div class="form-control">
+                            <label for="amount">Số tiền (VNĐ)</label>
+                            <input type="number" id="amount" placeholder="VD: 50000" min="0" required>
+                        </div>
+                        
+                        <div class="form-control">
+                            <label for="note">Ghi chú (Không bắt buộc)</label>
+                            <input type="text" id="note" placeholder="Ghi chú thêm...">
+                        </div>
+
+                        <button class="btn">Thêm Khoản Chi</button>
+                    </form>
+                </section>
+
+                <section class="transaction-history glass">
+                    <h3 style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span><i class="fa-solid fa-list"></i> Bảng Chi Tiêu</span>
+                        <a href="https://docs.google.com/spreadsheets/d/1zFKiJh6g9JaX2VV1tUpgLheEmHxgHc-3F2vVy4ftKUk/edit?usp=sharing" target="_blank" class="sheet-btn"><i class="fa-solid fa-table"></i> Tới Google Sheets</a>
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="expenses-table">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Nội dung</th>
+                                    <th>Số tiền</th>
+                                    <th>Người chi</th>
+                                    <th>Ghi chú</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="expense-table-body">
+                                <!-- Expenses will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK (Compat version for simplicity in vanilla JS) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
