@@ -55,7 +55,11 @@ const headerGroupName = document.getElementById('header-group-name');
 const headerGroupMembers = document.getElementById('header-group-members');
 const displayGroupCode = document.getElementById('display-group-code');
 const copyCodeBtn = document.getElementById('copy-code-btn');
+const copyReportHeaderBtn = document.getElementById('copy-report-header-btn');
+const copyReportSettlementBtn = document.getElementById('copy-report-settlement-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const toastEl = document.getElementById('toast');
+const toastMessageEl = document.getElementById('toast-message');
 
 // Avatar gradients
 const avatarGradients = [
@@ -175,10 +179,18 @@ logoutBtn.addEventListener('click', () => {
 });
 
 copyCodeBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(currentGroupId).then(() => {
-        alert("Đã copy mã nhóm: " + currentGroupId);
+    copyTextToClipboard(currentGroupId, () => {
+        showToast("Đã copy mã nhóm: " + currentGroupId);
     });
 });
+
+if (copyReportHeaderBtn) {
+    copyReportHeaderBtn.addEventListener('click', () => handleCopyReport(copyReportHeaderBtn));
+}
+
+if (copyReportSettlementBtn) {
+    copyReportSettlementBtn.addEventListener('click', () => handleCopyReport(copyReportSettlementBtn));
+}
 
 // ==========================================
 // FIREBASE REALTIME LISTENER
@@ -461,6 +473,162 @@ function syncToGoogleSheets(expense) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expense)
     }).catch(err => console.error(err));
+}
+
+// ==========================================
+// THÔNG BÁO TOAST & SAO CHÉP BÁO CÁO
+// ==========================================
+let toastTimer = null;
+function showToast(message) {
+    if (!toastEl) return;
+    if (toastMessageEl) toastMessageEl.innerText = message;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toastEl.classList.remove('show');
+    }, 3000);
+}
+
+function copyTextToClipboard(text, successCb) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (successCb) successCb();
+        }).catch(() => {
+            fallbackCopy(text, successCb);
+        });
+    } else {
+        fallbackCopy(text, successCb);
+    }
+}
+
+function fallbackCopy(text, successCb) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        const successful = document.execCommand('copy');
+        if (successful && successCb) successCb();
+    } catch (err) {
+        alert("Không thể tự động sao chép: " + err);
+    }
+    document.body.removeChild(textArea);
+}
+
+function generateSpendingReportText() {
+    if (!groupData) return "";
+
+    let total = 0;
+    let spentBy = {};
+    groupData.members.forEach(m => spentBy[m] = 0);
+
+    expenses.forEach(expense => {
+        total += expense.amount;
+        if (spentBy[expense.payer] !== undefined) {
+            spentBy[expense.payer] += expense.amount;
+        } else {
+            spentBy[expense.payer] = expense.amount;
+        }
+    });
+
+    const numPeople = groupData.members.length;
+    const average = numPeople > 0 ? total / numPeople : 0;
+
+    let balances = {};
+    groupData.members.forEach(m => {
+        balances[m] = spentBy[m] - average;
+    });
+
+    // Tính toán phương án tất toán
+    let debtors = [];
+    let creditors = [];
+    for (const [name, bal] of Object.entries(balances)) {
+        if (bal < -0.01) debtors.push({ name, amount: -bal });
+        else if (bal > 0.01) creditors.push({ name, amount: bal });
+    }
+
+    debtors.sort((a, b) => b.amount - a.amount);
+    creditors.sort((a, b) => b.amount - a.amount);
+
+    let settlements = [];
+    let i = 0, j = 0;
+    let debtorsClone = debtors.map(d => ({ ...d }));
+    let creditorsClone = creditors.map(c => ({ ...c }));
+
+    while (i < debtorsClone.length && j < creditorsClone.length) {
+        let debtor = debtorsClone[i];
+        let creditor = creditorsClone[j];
+        let settleAmount = Math.min(debtor.amount, creditor.amount);
+
+        settlements.push({ from: debtor.name, to: creditor.name, amount: settleAmount });
+        debtor.amount -= settleAmount;
+        creditor.amount -= settleAmount;
+
+        if (debtor.amount < 0.01) i++;
+        if (creditor.amount < 0.01) j++;
+    }
+
+    // Xây dựng nội dung thông báo
+    let lines = [];
+    lines.push(`📢 THÔNG BÁO CHI TIÊU NHÓM: ${groupData.name.toUpperCase()}`);
+    if (currentGroupId) lines.push(`🔑 Mã phòng: ${currentGroupId}`);
+    lines.push(`----------------------------------`);
+    lines.push(`💰 Tổng chi tiêu nhóm: ${formatMoney(total)}`);
+    lines.push(`⚖️ Bình quân mỗi người: ${formatMoney(average)}`);
+    lines.push(``);
+    lines.push(`👥 Tình trạng chi tiêu từng người:`);
+
+    groupData.members.forEach(member => {
+        const spent = spentBy[member] || 0;
+        const bal = balances[member] || 0;
+        let status = '';
+        if (total === 0) {
+            status = ' (Dư: 0 ₫)';
+        } else if (bal > 0.01) {
+            status = ` (Dư: +${formatMoney(bal)})`;
+        } else if (bal < -0.01) {
+            status = ` (Nợ: -${formatMoney(Math.abs(bal))})`;
+        } else {
+            status = ` (Đã hòa vốn)`;
+        }
+        lines.push(`• ${member} đã chi: ${formatMoney(spent)}${status}`);
+    });
+
+    lines.push(``);
+    lines.push(`🤝 Phương án tất toán (ai cần chuyển cho ai):`);
+    if (total === 0) {
+        lines.push(`• Chưa có chi tiêu nào được ghi nhận.`);
+    } else if (settlements.length === 0) {
+        lines.push(`• Mọi người đã hòa tiền, không ai nợ ai! 🎉`);
+    } else {
+        settlements.forEach(s => {
+            lines.push(`• ${s.from} ➡️ ${s.to}: ${formatMoney(s.amount)}`);
+        });
+    }
+    lines.push(`----------------------------------`);
+
+    return lines.join('\n');
+}
+
+function handleCopyReport(btn) {
+    if (!groupData) {
+        return alert("Chưa có thông tin nhóm!");
+    }
+    const reportText = generateSpendingReportText();
+    copyTextToClipboard(reportText, () => {
+        showToast("Đã copy thông báo chi tiêu vào bộ nhớ tạm!");
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Đã chép!`;
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        }
+    });
 }
 
 // Khởi động

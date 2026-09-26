@@ -66,11 +66,12 @@
             <header>
                 <h1><i class="fa-solid fa-users"></i> <span id="header-group-name">Quản Lý Chi Tiêu Nhóm</span></h1>
                 <p id="header-group-members">Kiểm soát chi tiêu cho nhóm</p>
-                <div style="margin-top: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                <div style="margin-top: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                     <span style="font-weight: 800; color: var(--text-primary);">Mã Nhóm:</span>
                     <span id="display-group-code" style="background: var(--primary); color: white; padding: 0.4rem 1rem; border-radius: 12px; font-weight: 800; letter-spacing: 2px;">XYZ123</span>
                     <button id="copy-code-btn" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 1.2rem;" title="Copy mã"><i class="fa-regular fa-copy"></i></button>
-                    <button id="logout-btn" style="background: #fee2e2; color: #ef4444; border: none; padding: 0.4rem 1rem; border-radius: 12px; font-weight: 800; cursor: pointer; margin-left: 1rem;"><i class="fa-solid fa-right-from-bracket"></i> Thoát nhóm</button>
+                    <button id="copy-report-header-btn" class="header-action-btn" title="Copy thông báo chi tiêu"><i class="fa-solid fa-clipboard-list"></i> Copy Báo Cáo</button>
+                    <button id="logout-btn" style="background: #fee2e2; color: #ef4444; border: none; padding: 0.4rem 1rem; border-radius: 12px; font-weight: 800; cursor: pointer;"><i class="fa-solid fa-right-from-bracket"></i> Thoát nhóm</button>
                 </div>
             </header>
             <section class="dashboard">
@@ -84,7 +85,12 @@
                 </div>
 
                 <div class="settlement-section glass mt-4">
-                    <h3><i class="fa-solid fa-handshake"></i> Phương Án Tất Toán</h3>
+                    <div class="settlement-header">
+                        <h3><i class="fa-solid fa-handshake"></i> Phương Án Tất Toán</h3>
+                        <button id="copy-report-settlement-btn" class="btn-copy-report">
+                            <i class="fa-solid fa-copy"></i> Copy Thông Báo Chi Tiêu
+                        </button>
+                    </div>
                     <div class="average-box">
                         <span>Bình quân mỗi người phải chi:</span>
                         <strong id="average-expense">0 ₫</strong>
@@ -157,6 +163,12 @@
                 </section>
             </div>
         </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-message">Đã sao chép vào bộ nhớ tạm!</span>
     </div>
 
     <!-- Firebase SDK (Compat version for simplicity in vanilla JS) -->
