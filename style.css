@@ -513,6 +513,15 @@ tbody tr:hover {
     transform: translateY(0);
 }
 
+.header-action-btn-purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+.header-action-btn-purple:hover {
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+}
+
 /* Settlement Header & Copy Button */
 .settlement-header {
     display: flex;
@@ -550,6 +559,15 @@ tbody tr:hover {
 
 .btn-copy-report:active {
     transform: translateY(0);
+}
+
+.btn-copy-spent {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.btn-copy-spent:hover {
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
 }
 
 /* Toast Notification */

@@ -55,7 +55,9 @@ const headerGroupName = document.getElementById('header-group-name');
 const headerGroupMembers = document.getElementById('header-group-members');
 const displayGroupCode = document.getElementById('display-group-code');
 const copyCodeBtn = document.getElementById('copy-code-btn');
-const copyReportHeaderBtn = document.getElementById('copy-report-header-btn');
+const copySpentHeaderBtn = document.getElementById('copy-spent-header-btn');
+const copySettlementHeaderBtn = document.getElementById('copy-settlement-header-btn');
+const copySpentSettlementBtn = document.getElementById('copy-spent-settlement-btn');
 const copyReportSettlementBtn = document.getElementById('copy-report-settlement-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const toastEl = document.getElementById('toast');
@@ -184,12 +186,20 @@ copyCodeBtn.addEventListener('click', () => {
     });
 });
 
-if (copyReportHeaderBtn) {
-    copyReportHeaderBtn.addEventListener('click', () => handleCopyReport(copyReportHeaderBtn));
+if (copySpentHeaderBtn) {
+    copySpentHeaderBtn.addEventListener('click', () => handleCopySpent(copySpentHeaderBtn));
+}
+
+if (copySettlementHeaderBtn) {
+    copySettlementHeaderBtn.addEventListener('click', () => handleCopySettlement(copySettlementHeaderBtn));
+}
+
+if (copySpentSettlementBtn) {
+    copySpentSettlementBtn.addEventListener('click', () => handleCopySpent(copySpentSettlementBtn));
 }
 
 if (copyReportSettlementBtn) {
-    copyReportSettlementBtn.addEventListener('click', () => handleCopyReport(copyReportSettlementBtn));
+    copyReportSettlementBtn.addEventListener('click', () => handleCopySettlement(copyReportSettlementBtn));
 }
 
 // ==========================================
@@ -519,7 +529,29 @@ function fallbackCopy(text, successCb) {
     document.body.removeChild(textArea);
 }
 
-function generateSpendingReportText() {
+function generateSpentOnlyText() {
+    if (!groupData) return "";
+
+    let spentBy = {};
+    groupData.members.forEach(m => spentBy[m] = 0);
+
+    expenses.forEach(expense => {
+        if (spentBy[expense.payer] !== undefined) {
+            spentBy[expense.payer] += expense.amount;
+        } else {
+            spentBy[expense.payer] = expense.amount;
+        }
+    });
+
+    let lines = [];
+    groupData.members.forEach(member => {
+        lines.push(`${member} đã chi: ${formatMoney(spentBy[member] || 0)}`);
+    });
+
+    return lines.join('\n');
+}
+
+function generateSettlementReportText() {
     if (!groupData) return "";
 
     let total = 0;
@@ -572,32 +604,36 @@ function generateSpendingReportText() {
         if (creditor.amount < 0.01) j++;
     }
 
-    // Xây dựng nội dung thông báo
+    // Xây dựng nội dung thông báo tất toán (không có mã phòng)
     let lines = [];
-    lines.push(`📢 THÔNG BÁO CHI TIÊU NHÓM: ${groupData.name.toUpperCase()}`);
-    if (currentGroupId) lines.push(`🔑 Mã phòng: ${currentGroupId}`);
-    lines.push(`----------------------------------`);
+    lines.push(`📢 THÔNG BÁO TẤT TOÁN NHÓM: ${groupData.name.toUpperCase()}`);
+    lines.push(``);
     lines.push(`💰 Tổng chi tiêu nhóm: ${formatMoney(total)}`);
     lines.push(`⚖️ Bình quân mỗi người: ${formatMoney(average)}`);
     lines.push(``);
     lines.push(`👥 Tình trạng chi tiêu từng người:`);
-
+    lines.push(`1. Đã chi:`);
     groupData.members.forEach(member => {
-        const spent = spentBy[member] || 0;
-        const bal = balances[member] || 0;
-        let status = '';
-        if (total === 0) {
-            status = ' (Dư: 0 ₫)';
-        } else if (bal > 0.01) {
-            status = ` (Dư: +${formatMoney(bal)})`;
-        } else if (bal < -0.01) {
-            status = ` (Nợ: -${formatMoney(Math.abs(bal))})`;
-        } else {
-            status = ` (Đã hòa vốn)`;
-        }
-        lines.push(`• ${member} đã chi: ${formatMoney(spent)}${status}`);
+        lines.push(`• ${member} đã chi: ${formatMoney(spentBy[member] || 0)}`);
     });
-
+    lines.push(``);
+    lines.push(`2. Phải trả / Được nhận:`);
+    if (total === 0) {
+        lines.push(`• Chưa có chi tiêu nào được ghi nhận.`);
+    } else {
+        groupData.members.forEach(member => {
+            const bal = balances[member] || 0;
+            let status = '';
+            if (bal > 0.01) {
+                status = `Dư +${formatMoney(bal)} (Được nhận)`;
+            } else if (bal < -0.01) {
+                status = `Nợ -${formatMoney(Math.abs(bal))} (Phải trả)`;
+            } else {
+                status = `0 ₫ (Đã cân bằng)`;
+            }
+            lines.push(`• ${member}: ${status}`);
+        });
+    }
     lines.push(``);
     lines.push(`🤝 Phương án tất toán (ai cần chuyển cho ai):`);
     if (total === 0) {
@@ -609,18 +645,34 @@ function generateSpendingReportText() {
             lines.push(`• ${s.from} ➡️ ${s.to}: ${formatMoney(s.amount)}`);
         });
     }
-    lines.push(`----------------------------------`);
 
     return lines.join('\n');
 }
 
-function handleCopyReport(btn) {
+function handleCopySpent(btn) {
     if (!groupData) {
         return alert("Chưa có thông tin nhóm!");
     }
-    const reportText = generateSpendingReportText();
-    copyTextToClipboard(reportText, () => {
-        showToast("Đã copy thông báo chi tiêu vào bộ nhớ tạm!");
+    const text = generateSpentOnlyText();
+    copyTextToClipboard(text, () => {
+        showToast("Đã copy số tiền đã chi của từng người!");
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Đã chép!`;
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        }
+    });
+}
+
+function handleCopySettlement(btn) {
+    if (!groupData) {
+        return alert("Chưa có thông tin nhóm!");
+    }
+    const text = generateSettlementReportText();
+    copyTextToClipboard(text, () => {
+        showToast("Đã copy thông báo tất toán!");
         if (btn) {
             const originalHTML = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-check"></i> Đã chép!`;
